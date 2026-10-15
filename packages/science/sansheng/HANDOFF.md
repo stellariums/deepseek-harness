@@ -1,6 +1,6 @@
 # 三省制 Agent 治理插件 · 交接文档
 
-更新于 2026-10-15。分支 `sansheng-mvp`，基于 deepseek-harness（dsh）`d743267`（0.2.1-alpha.2）。
+更新于 2026-10-15。分支 `sansheng-mvp`，基于 deepseek-harness（dsh）`0.2.1-alpha.2`。
 
 ## 1. 目标
 

@@ -45,6 +45,7 @@ packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
   goal/                 session goals
   schedule/             scheduled follow-ups
   preset/               agent composition
+  science/              governed research workflows (sansheng)
   guard/                loop/tool guards
   extensions/           runtime self-modification
   session/              durable sessions

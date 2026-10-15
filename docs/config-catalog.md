@@ -2637,6 +2637,44 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-sandbox-policy -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-sansheng -->
+<a id="deepseek-aidsh-sansheng"></a>
+
+## `@deepseek-ai/dsh-sansheng`
+
+- `inject`: `tools` · `agents` · `subagents` · `systemPrompt`
+- `source`: [`packages/science/sansheng/src/index.ts:37`](../packages/science/sansheng/src/index.ts)
+
+```ts config-catalog
+export interface Config {
+  /** Absolute directory of the record store; must lie outside the workspace. */
+  storeRoot: string
+  /** Absolute workspace root the executor may write. */
+  workspaceRoot: string
+  /** Further directories no agent may read or write (harness home, config). */
+  protectedRoots: string[]
+  /** Subagent provider used for the three 省 (must be fresh, structured-output capable). */
+  provider: string
+  /** Model route each 省 child runs on; the reviewer must differ from the planner. */
+  routes: {
+    /** Planner (中书) route. */
+    zhongshu: RoleRoute
+    /** Reviewer (门下) route. */
+    menxia: RoleRoute
+    /** Executor (尚书) route. */
+    shangshu: RoleRoute
+  }
+}
+
+export interface RoleRoute {
+  /** Provider id the deployment's `llm` service resolves for this role. */
+  provider: string
+  /** Model id on that provider. */
+  model: string
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-sansheng -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-schedule -->
 <a id="deepseek-aidsh-schedule"></a>
 

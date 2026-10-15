@@ -28,7 +28,9 @@ export const name = 'sansheng'
 export const inject = ['tools', 'agents', 'subagents', 'systemPrompt']
 
 export interface RoleRoute {
+  /** Provider id the deployment's `llm` service resolves for this role. */
   provider: string
+  /** Model id on that provider. */
   model: string
 }
 
@@ -41,7 +43,15 @@ export interface Config {
   protectedRoots: string[]
   /** Subagent provider used for the three 省 (must be fresh, structured-output capable). */
   provider: string
-  routes: { zhongshu: RoleRoute; menxia: RoleRoute; shangshu: RoleRoute }
+  /** Model route each 省 child runs on; the reviewer must differ from the planner. */
+  routes: {
+    /** Planner (中书) route. */
+    zhongshu: RoleRoute
+    /** Reviewer (门下) route. */
+    menxia: RoleRoute
+    /** Executor (尚书) route. */
+    shangshu: RoleRoute
+  }
 }
 
 const Route: z<RoleRoute> = z.object({ provider: z.string().required(), model: z.string().required() })

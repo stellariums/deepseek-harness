@@ -1,0 +1,82 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/science/sansheng/README.md
+/:
+  en: b4d9fcd29526d72a
+  zh: 7dcd73c9152cb03c
+/deepseek-ai-dsh-sansheng:
+  en: fa0b6f7b3c059937
+  zh: 975217680a8c1edb
+/deepseek-ai-dsh-sansheng/summary:
+  en: dccb59e80521ff7f
+  zh: b5e2d40b39e5b373
+/deepseek-ai-dsh-sansheng/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 0b7944056ec2588c
+/deepseek-ai-dsh-sansheng/use-this-package:
+  en: 02a74af41f61bd23
+  zh: 98504278fb6f55d7
+/deepseek-ai-dsh-sansheng/use-this-package/when-to-choose-it:
+  en: a46a502b8a46ecde
+  zh: 1901ba9a0b89df42
+/deepseek-ai-dsh-sansheng/use-this-package/minimal-configuration:
+  en: 2c0e63d86cef212f
+  zh: 97bf25058f6f2e5c
+/deepseek-ai-dsh-sansheng/use-this-package/human-commands-and-the-agent-loop:
+  en: cde3ed487259ae86
+  zh: 513da24c6885998b
+/deepseek-ai-dsh-sansheng/understand-the-implementation:
+  en: 3ad97d46c7190249
+  zh: 79899dea1d70b798
+/deepseek-ai-dsh-sansheng/further-exploration:
+  en: 3982d2b232150e88
+  zh: 67de3162d8158a36
+/deepseek-ai-dsh-sansheng/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-sansheng/model-experience/eunuch-system-prompt:
+  en: 7067cd30b05f0087
+  zh: e41666af4c6f4431
+/deepseek-ai-dsh-sansheng/model-experience/eunuch-system-prompt/what-the-model-sees:
+  en: 68bf8b1cb34230c6
+  zh: 9f3e7f378265eac7
+/deepseek-ai-dsh-sansheng/model-experience/eunuch-system-prompt/what-the-model-sees/verbatim-eunuch-persona:
+  en: f8171f8d4743ef85
+  zh: 5dc77cd88b0bff72
+/deepseek-ai-dsh-sansheng/model-experience/eunuch-system-prompt/token-effect:
+  en: 4ca6672d1ee9dbc4
+  zh: 6ebde1dc1360068e
+/deepseek-ai-dsh-sansheng/model-experience/eunuch-system-prompt/kv-cache-effect:
+  en: 66b88971bde510ac
+  zh: f9de40091ef53596
+/deepseek-ai-dsh-sansheng/model-experience/governance-tools:
+  en: 726bc1a3eb25c456
+  zh: 897a045441b8258a
+/deepseek-ai-dsh-sansheng/model-experience/governance-tools/what-the-model-sees:
+  en: a3bf8bd63744193c
+  zh: 51d6886791426e00
+/deepseek-ai-dsh-sansheng/model-experience/governance-tools/token-effect:
+  en: bed8770c1aa7cb5e
+  zh: c346c5ed5a25a4bc
+/deepseek-ai-dsh-sansheng/model-experience/governance-tools/kv-cache-effect:
+  en: 86fe84d38e121e65
+  zh: 18794c391fb6716b
+/deepseek-ai-dsh-sansheng/model-experience/role-child-dispatch-prompts:
+  en: 985f77949c58e81d
+  zh: 1ca937eea54e5fbb
+/deepseek-ai-dsh-sansheng/model-experience/role-child-dispatch-prompts/what-the-model-sees:
+  en: 96e182da00f78c04
+  zh: 76b79b0158c4e0a5
+/deepseek-ai-dsh-sansheng/model-experience/role-child-dispatch-prompts/token-effect:
+  en: d7a16381fe902e47
+  zh: ad7cb5dce675bbe5
+/deepseek-ai-dsh-sansheng/model-experience/role-child-dispatch-prompts/kv-cache-effect:
+  en: 9f355d55d51675c2
+  zh: 6b9536acd8ad2282
+/deepseek-ai-dsh-sansheng/known-limitations-and-deferred-work:
+  en: e8cbf83937130170
+  zh: 0f6bb9c891be708b
+/deepseek-ai-dsh-sansheng/known-limitations-and-deferred-work/dev-note:
+  en: dda0625fc3885364
+  zh: 009a62465d18748f

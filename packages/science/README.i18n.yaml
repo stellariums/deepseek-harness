@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/science/README.md
+/:
+  en: ab3c1757f33d688a
+  zh: 240ae69554c6787b
+/science-governed-research-workflows:
+  en: 5325adb1f9d4d72e
+  zh: c2c24421557157ce
+/science-governed-research-workflows/summary:
+  en: f31f64b5b22c4be6
+  zh: b9027db72a56822f
+/science-governed-research-workflows/table-of-contents:
+  en: 1eb35b015a6c423f
+  zh: a8a3dceee2c9e943
+/science-governed-research-workflows/packages:
+  en: 3e2cfc4b55c8d156
+  zh: b0f705bbf152264b
+/science-governed-research-workflows/related-documentation:
+  en: 98067dbd8b174d8a
+  zh: 3a603fb6141624a0
+/science-governed-research-workflows/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269
