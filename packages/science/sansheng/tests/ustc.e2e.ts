@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -9,10 +9,14 @@ import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-test
 import CommandRuntime from '@deepseek-ai/dsh-commands'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
+import PwshLocalExecutor from '@deepseek-ai/dsh-pwsh-local'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import * as ShellEnv from '@deepseek-ai/dsh-shell-env'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import * as Spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
+import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
+import * as ToolPwsh from '@deepseek-ai/dsh-tool-pwsh'
 import { mountLocalActivations } from '../../../subagent/subagent/tests/local-activation.ts'
 import * as Sansheng from '../src/index.ts'
 
@@ -50,6 +54,12 @@ async function boot() {
   await ctx.plugin(Spawn, { providerName: 'spawn' })
   await ctx.plugin(CommandRuntime)
   await ctx.plugin(ToolFs, {})
+  // The executor and reviewer need a real shell; on Windows the pwsh chain is
+  // subprocess → shell-env → pwsh-local executor (provides ctx.shell) → tool.
+  await ctx.plugin(LocalSubprocessRuntime)
+  await ctx.plugin(ShellEnv)
+  await ctx.plugin(PwshLocalExecutor, { cwd: workspace, timeoutMs: 60_000 })
+  await ctx.plugin(ToolPwsh, {})
   await ctx.plugin(Sansheng, {
     storeRoot: join(root, 'store'),
     workspaceRoot: workspace,
@@ -117,6 +127,20 @@ async function phase(ctx: Context, agent: Agent): Promise<string> {
   return cmd(ctx, agent, '/zouzhe 001')
 }
 
+/** Find one file name under a directory tree, depth-first. */
+function findFile(dir: string, name: string): string | undefined {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      const hit = findFile(path, name)
+      if (hit !== undefined) return hit
+    } else if (entry.name === name) {
+      return path
+    }
+  }
+  return undefined
+}
+
 describe.skipIf(KEY === undefined)('USTC pilot', { retry: 0 }, () => {
   it('runs one small topic end to end on real models', async () => {
     const { ctx, eunuch, workspace } = await boot()
@@ -136,7 +160,24 @@ describe.skipIf(KEY === undefined)('USTC pilot', { retry: 0 }, () => {
     if (memo.includes('争议')) await cmd(ctx, eunuch, '/zhupi 001 准')
     await say(ctx, eunuch, '请交尚书执行，完成后交门下验收')
     memo = await phase(ctx, eunuch)
+    // Acceptance may fail and send the topic back to executing; keep prompting
+    // until the workflow settles, but stop at a deviation (that needs the emperor).
+    for (let round = 0; round < 4 && /执行 🔄|验收 🔄/.test(memo); round++) {
+      await say(ctx, eunuch, '请继续推进课题，直到门下验收通过')
+      memo = await phase(ctx, eunuch)
+    }
     trace(`workspace files: ${readdirSync(workspace).join(', ')}`)
-    expect(memo).toMatch(/复命 🔄|执行 🔄|偏差/)
-  }, 40 * 60_000)
+    expect(memo).toMatch(/复命 🔄|偏差/)
+    if (memo.includes('复命 🔄')) {
+      const result = findFile(workspace, 'result.txt')
+      trace(`result.txt: ${result === undefined ? '(missing)' : readFileSync(result, 'utf8').slice(0, 200)}`)
+      expect(result, 'the deliverable result.txt must exist in the workspace').toBeDefined()
+      if (result === undefined) throw new Error('result.txt not found')
+      expect(readFileSync(result, 'utf8')).toContain('1229')
+      await cmd(ctx, eunuch, '/zhupi 001 准')
+      memo = await phase(ctx, eunuch)
+      trace(memo)
+      expect(memo).toContain('复命 ✅')
+    }
+  }, 60 * 60_000)
 })
