@@ -20,6 +20,7 @@ export type Phase =
   | 'closed'
 
 export type TopicEvent =
+  | { type: 'translation_submitted' }
   | { type: 'retranslate' }
   | { type: 'translation_confirmed' }
   | { type: 'plan_submitted'; version: number; hash: string }
@@ -43,6 +44,8 @@ export interface TopicState {
   /** 返工 count under the current approval; > MAX_REWORKS escalates. */
   readonly reworks: number
   readonly planVersion: number
+  /** Number of translations the eunuch has submitted; confirmation needs one. */
+  readonly translationVersion: number
   readonly planHash?: string
   readonly approval?: { readonly planHash: string; readonly criteriaHash: string }
 }
@@ -76,8 +79,20 @@ const ACTORS: ReadonlySet<string> = new Set<Actor>(['emperor', 'eunuch', 'zhongs
 const EMPEROR = ['emperor'] as const
 
 const RULES: { readonly [K in TopicEvent['type']]: Rule<EventOf<K>> } = {
+  translation_submitted: {
+    from: ['translated'],
+    by: ['eunuch'],
+    next: s => ({ ...s, translationVersion: s.translationVersion + 1 }),
+  },
   retranslate: { from: ['translated'], by: EMPEROR, next: s => s },
-  translation_confirmed: { from: ['translated'], by: EMPEROR, next: s => ({ ...s, phase: 'drafting' }) },
+  translation_confirmed: {
+    from: ['translated'],
+    by: EMPEROR,
+    next: (s) => {
+      if (s.translationVersion === 0) throw new TransitionError('no translation has been submitted yet')
+      return { ...s, phase: 'drafting' }
+    },
+  },
   plan_submitted: {
     from: ['drafting'],
     by: ['zhongshu'],
@@ -134,7 +149,7 @@ const RULES: { readonly [K in TopicEvent['type']]: Rule<EventOf<K>> } = {
 }
 
 export function initialState(): TopicState {
-  return { phase: 'translated', rejections: 0, reworks: 0, planVersion: 0 }
+  return { phase: 'translated', rejections: 0, reworks: 0, planVersion: 0, translationVersion: 0 }
 }
 
 /**

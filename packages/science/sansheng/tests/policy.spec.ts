@@ -26,6 +26,14 @@ describe('tool allowlist', () => {
     expect(decide(as('zhongshu'), ctx('drafting'), 'mystery_tool', {})).toMatch(/not available/)
   })
 
+  it('the three 省 may search the web for literature; the eunuch may not', () => {
+    for (const role of ['zhongshu', 'menxia', 'shangshu'] as Role[]) {
+      expect(decide(as(role), ctx('reviewing'), 'web_search', { query: 'x' })).toBeUndefined()
+      expect(decide(as(role), ctx('reviewing'), 'web_fetch', { url: 'https://x' })).toBeUndefined()
+    }
+    expect(decide(as('eunuch'), ctx('reviewing'), 'web_search', { query: 'x' })).toMatch(/not available/)
+  })
+
   it('todo_write is neutral for everyone', () => {
     for (const role of ROLES) expect(decide(as(role), ctx('drafting'), 'todo_write', {})).toBeUndefined()
   })
@@ -47,14 +55,11 @@ describe('tool allowlist', () => {
     expect(decide(as('zhongshu'), ctx('drafting'), 'subagent', { prompt: 'x' })).toBeDefined()
   })
 
-  it('each role reaches only its own submit tools', () => {
-    expect(decide(as('zhongshu'), ctx('drafting'), 'submit_plan', {})).toBeUndefined()
-    expect(decide(as('menxia'), ctx('reviewing'), 'submit_review', {})).toBeUndefined()
-    expect(decide(as('menxia'), ctx('accepting'), 'submit_acceptance', {})).toBeUndefined()
-    expect(decide(as('shangshu'), ctx('executing'), 'submit_execution', {})).toBeUndefined()
-    expect(decide(as('shangshu'), ctx('executing'), 'report_deviation', {})).toBeUndefined()
-    expect(decide(as('shangshu'), ctx('executing'), 'submit_plan', {})).toBeDefined()
-    expect(decide(as('menxia'), ctx('reviewing'), 'submit_execution', {})).toBeDefined()
+  it('every 省 submits through structured_output; the eunuch has nothing to submit', () => {
+    for (const role of ['zhongshu', 'menxia', 'shangshu'] as Role[]) {
+      expect(decide(as(role), ctx('reviewing'), 'structured_output', {})).toBeUndefined()
+    }
+    expect(decide(as('eunuch'), ctx('reviewing'), 'structured_output', {})).toMatch(/not available/)
   })
 
   it('only the eunuch reaches governance tools', () => {

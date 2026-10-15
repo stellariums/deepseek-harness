@@ -1,0 +1,30 @@
+# 三省制 profile overlay. Use together with the USTC provider patch:
+#   source .local/env.sh && source .local/secrets.env
+#   cd <研究工作区> && pnpm -C /e/Science-harness dsh web \
+#     --patch E:/Science-harness/packages/science/sansheng/profile/ustc-llm.patch.yml \
+#     --patch E:/Science-harness/packages/science/sansheng/profile/sansheng.patch.yml
+# The workspace is the directory dsh starts in; the record store lives under
+# DSH_HOME, outside the workspace and outside every agent's reach.
+- id: agent-default-model
+  config:
+    provider: ustc
+    model: deepseek-flash        # 太监
+
+- id: subagent
+  config:
+    maxDepth: 3                  # 太监 → 尚书 → 尚书子 Agent
+
+- insert:
+    - id: sansheng
+      name: 'E:/Science-harness/packages/science/sansheng/src/index.ts'
+      config:
+        storeRoot: !!js dshHomePath('sansheng')
+        workspaceRoot: !!js process.cwd()
+        protectedRoots:
+          - !!js dshHomePath()
+          - E:/Science-harness/.local
+        provider: spawn
+        routes:
+          zhongshu: { provider: ustc, model: deepseek-flash }
+          menxia: { provider: ustc, model: qwen3.8-reasoner }
+          shangshu: { provider: ustc, model: qwen3.8-flash-next }

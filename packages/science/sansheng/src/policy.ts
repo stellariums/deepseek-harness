@@ -49,19 +49,19 @@ export const GOVERNANCE_TOOLS: ReadonlySet<string> = new Set([
   'sansheng_accept',
 ])
 
-/** Agent-callable tools that submit a role's output back to the plugin. */
-export const SUBMIT_TOOLS: Readonly<Record<Role, ReadonlySet<string>>> = {
-  eunuch: new Set(),
-  zhongshu: new Set(['submit_plan']),
-  menxia: new Set(['submit_review', 'submit_acceptance']),
-  shangshu: new Set(['submit_execution', 'report_deviation']),
-}
+/**
+ * The structured-output capture tool every role child uses to hand its
+ * result back; the plugin, not the child, turns it into a ledger entry.
+ */
+export const SUBMIT_TOOL = 'structured_output'
 
 const READ_TOOLS = new Set(['read', 'read_image'])
 const SEARCH_TOOLS = new Set(['grep', 'glob'])
 const WRITE_TOOLS = new Set(['write', 'edit'])
 const SHELL_TOOLS = new Set(['bash', 'pwsh', 'run_code'])
 const NEUTRAL_TOOLS = new Set(['todo_write'])
+/** Outbound read-only research tools: literature search and page fetch. */
+const WEB_TOOLS = new Set(['web_search', 'web_fetch'])
 
 type Args = Readonly<Record<string, unknown>>
 
@@ -71,6 +71,7 @@ type Args = Readonly<Record<string, unknown>>
  */
 export function decide(who: Binding, ctx: PolicyContext, tool: string, args: Args): string | undefined {
   if (NEUTRAL_TOOLS.has(tool)) return undefined
+  if (WEB_TOOLS.has(tool)) return who.role === 'eunuch' ? unavailable(who, tool) : undefined
   if (tool === 'str_replace_editor') {
     const path = stringArg(args, 'path')
     return args['command'] === 'view' ? checkRead(ctx, path) : checkWrite(who, ctx, path)
@@ -80,7 +81,7 @@ export function decide(who: Binding, ctx: PolicyContext, tool: string, args: Arg
   if (WRITE_TOOLS.has(tool)) return checkWrite(who, ctx, stringArg(args, 'file_path'))
   if (SHELL_TOOLS.has(tool)) return shellAllowed(who, ctx.phase) ? undefined : unavailable(who, tool)
   if (tool === 'subagent' && who.role === 'shangshu' && ctx.phase === 'executing') return undefined
-  if (SUBMIT_TOOLS[who.role].has(tool)) return undefined
+  if (tool === SUBMIT_TOOL && who.role !== 'eunuch') return undefined
   if (GOVERNANCE_TOOLS.has(tool) && who.role === 'eunuch') return undefined
   return unavailable(who, tool)
 }

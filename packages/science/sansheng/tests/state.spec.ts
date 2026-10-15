@@ -9,8 +9,12 @@ function run(steps: [Actor, TopicEvent][], from: TopicState = initialState()): T
   return steps.reduce((s, [actor, ev]) => apply(s, actor, ev), from)
 }
 
-const toReview: [Actor, TopicEvent][] = [
+const toDrafting: [Actor, TopicEvent][] = [
+  ['eunuch', { type: 'translation_submitted' }],
   [E, { type: 'translation_confirmed' }],
+]
+const toReview: [Actor, TopicEvent][] = [
+  ...toDrafting,
   ['zhongshu', { type: 'plan_submitted', version: 1, hash: 'h1' }],
 ]
 const toApproval: [Actor, TopicEvent][] = [
@@ -38,16 +42,25 @@ describe('happy path', () => {
   })
 
   it('starts in translated awaiting the emperor', () => {
-    expect(initialState()).toEqual({ phase: 'translated', rejections: 0, reworks: 0, planVersion: 0 })
+    expect(initialState()).toEqual({ phase: 'translated', rejections: 0, reworks: 0, planVersion: 0, translationVersion: 0 })
   })
 
   it('lets the emperor send the translation back for rework', () => {
     expect(run([[E, { type: 'retranslate' }]]).phase).toBe('translated')
   })
 
+  it('the emperor cannot confirm before a translation exists', () => {
+    expect(() => run([[E, { type: 'translation_confirmed' }]])).toThrow(/translation/)
+  })
+
+  it('only the eunuch submits translations, and each bumps the version', () => {
+    expect(run([['eunuch', { type: 'translation_submitted' }], ['eunuch', { type: 'translation_submitted' }]]).translationVersion).toBe(2)
+    expect(() => run([['zhongshu', { type: 'translation_submitted' }]])).toThrow(TransitionError)
+  })
+
   it('does not mutate the input state', () => {
     const s0 = initialState()
-    const s1 = apply(s0, E, { type: 'translation_confirmed' })
+    const s1 = apply(s0, 'eunuch', { type: 'translation_submitted' })
     expect(s0.phase).toBe('translated')
     expect(s1).not.toBe(s0)
   })
@@ -90,7 +103,7 @@ describe('illegal transitions', () => {
 
   it('plan versions must be sequential', () => {
     expect(() => run([
-      [E, { type: 'translation_confirmed' }],
+      ...toDrafting,
       ['zhongshu', { type: 'plan_submitted', version: 2, hash: 'h' }],
     ])).toThrow(/version/)
   })
@@ -184,7 +197,7 @@ describe('review fixes', () => {
   })
 
   it('the emperor can veto at any open phase', () => {
-    const prefixes: [Actor, TopicEvent][][] = [[], toReview.slice(0, 1), toReview, toApproval, toExecuting, toAccepting]
+    const prefixes: [Actor, TopicEvent][][] = [[], toDrafting, toReview, toApproval, toExecuting, toAccepting]
     for (const p of prefixes) expect(run([...p, [E, { type: 'vetoed' }]]).phase).toBe('closed')
   })
 
@@ -196,10 +209,12 @@ describe('review fixes', () => {
 describe('replay validation', () => {
   it('rejects empty hashes and non-integer versions', () => {
     expect(() => replay([
+      { actor: 'eunuch', event: { type: 'translation_submitted' } },
       { actor: E, event: { type: 'translation_confirmed' } },
       { actor: 'zhongshu', event: { type: 'plan_submitted', version: 1 } as never },
     ])).toThrow(TransitionError)
     expect(() => replay([
+      { actor: 'eunuch', event: { type: 'translation_submitted' } },
       { actor: E, event: { type: 'translation_confirmed' } },
       { actor: 'zhongshu', event: { type: 'plan_submitted', version: 1.5, hash: 'h' } },
     ])).toThrow(TransitionError)
@@ -207,6 +222,7 @@ describe('replay validation', () => {
 
   it('rejects an approval with missing hashes', () => {
     expect(() => replay([
+      { actor: 'eunuch', event: { type: 'translation_submitted' } },
       { actor: E, event: { type: 'translation_confirmed' } },
       { actor: 'zhongshu', event: { type: 'plan_submitted', version: 1, hash: 'h1' } },
       { actor: 'menxia', event: { type: 'review_passed' } },
@@ -230,6 +246,7 @@ describe('replay validation', () => {
 describe('replay', () => {
   it('folds a ledger into state', () => {
     const s = replay([
+      { actor: 'eunuch', event: { type: 'translation_submitted' } },
       { actor: E, event: { type: 'translation_confirmed' } },
       { actor: 'zhongshu', event: { type: 'plan_submitted', version: 1, hash: 'h1' } },
     ])

@@ -1,0 +1,18 @@
+# USTC LLM gateway (OpenAI-compatible). The key comes from env USTC_LLM_API_KEY,
+# never from this file (keep it in E:\Science-harness\.local\secrets.env, git-ignored).
+# Model ids verified via GET /v1/models and a 2-round tool-call probe on 2026-10-15.
+- id: llm-pi-ai
+  config:
+    providers:
+      ustc:
+        displayName: USTC LLM
+        apiKeyEnv: USTC_LLM_API_KEY
+        api: openai-completions
+        baseURL: https://api.llm.ustc.edu.cn/v1
+        models:
+          - id: deepseek-flash         # 太监 / 中书
+            contextWindow: 1000000
+          - id: qwen3.8-reasoner       # 门下
+          - id: qwen3.8-flash-next     # 尚书
+            contextWindow: 262144
+          - id: glm-5.3-flash          # 不用：单次请求约 4 分钟，dsh 内曾卡死
