@@ -6,6 +6,7 @@ import { Bindings, guardCall } from '../src/index.ts'
 import type { Env } from '../src/index.ts'
 import { renderMemorial } from '../src/memorial.ts'
 import { acceptPrompt, draftPrompt, executePrompt, reviewPrompt } from '../src/prompts.ts'
+import { claimedDeliverables, missingDeliverables } from '../src/tools.ts'
 import { initialState } from '../src/state.ts'
 import type { Phase, TopicState } from '../src/state.ts'
 
@@ -84,6 +85,39 @@ describe('prompts', () => {
     expect(executePrompt({ plan: 'p', criteria: 'c', issues: ['x'] })).toContain('- x')
     expect(reviewPrompt({ decree: 'd', translation: 't', plan: 'p', criteria: 'c' })).toContain('待审方案')
     expect(acceptPrompt({ plan: 'p', criteria: 'c', report: 'r' })).toContain('尚书执行报告')
+  })
+})
+
+describe('claimedDeliverables', () => {
+  const root = process.platform === 'win32' ? 'E:\\ws' : '/ws'
+  const j = (...p: string[]): string => [root, ...p].join(process.platform === 'win32' ? '\\' : '/')
+
+  it('collects code spans and bare file paths, deduplicated', () => {
+    const report = '交付物：`result.txt` 与 `result.txt`，另见 prime_count.py。'
+    const claims = claimedDeliverables(report, root)
+    expect(claims).toEqual([j('result.txt'), j('prime_count.py')])
+  })
+
+  it('keeps relative paths inside the workspace and resolves nested ones', () => {
+    expect(claimedDeliverables('输出在 output/result.txt', root)).toEqual([j('output', 'result.txt')])
+  })
+
+  it('drops absolute paths outside the workspace and directory-like claims', () => {
+    expect(claimedDeliverables('参考 E:\\other\\x.txt 与工作区目录 `data/`', root)).toEqual([])
+  })
+
+  it('accepts an absolute path inside the workspace', () => {
+    const abs = process.platform === 'win32' ? 'E:\\ws\\out\\result.txt' : '/ws/out/result.txt'
+    expect(claimedDeliverables(`写入 ${abs}`, root)).toEqual([j('out', 'result.txt')])
+  })
+
+  it('ignores numbers and version-like tokens', () => {
+    expect(claimedDeliverables('版本 3.5，占比 0.75，参见图 2.1', root)).toEqual([])
+  })
+
+  it('missingDeliverables lists only absent files', async () => {
+    const here = import.meta.dirname
+    expect(await missingDeliverables([`${here}/units.spec.ts`, `${here}/nope.txt`])).toEqual([`${here}/nope.txt`])
   })
 })
 

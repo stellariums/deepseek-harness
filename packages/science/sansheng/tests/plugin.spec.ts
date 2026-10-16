@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -56,7 +56,18 @@ async function boot(
   }
   for (const [role, adapter] of Object.entries(adapters)) ctx.llm.registerAdapter([`p-${role}`], adapter)
   ctx.tools.register(defineContentToolFixture({ name: 'read', description: 'r', parameters: {}, async execute() { return [{ type: 'text', text: 'file' }] } }))
-  ctx.tools.register(defineContentToolFixture({ name: 'write', description: 'w', parameters: {}, async execute() { return [{ type: 'text', text: 'wrote' }] } }))
+  ctx.tools.register(defineContentToolFixture({
+    name: 'write',
+    description: 'w',
+    parameters: {},
+    async execute(args: Record<string, unknown>, exec: { agent?: { session: { header: { cwd?: string } } } }) {
+      const path = args['file_path']
+      if (typeof path !== 'string') return [{ type: 'text', text: 'no path' }]
+      const cwd = exec.agent?.session.header.cwd ?? workspace
+      writeFileSync(resolve(cwd, path), String(args['content'] ?? ''))
+      return [{ type: 'text', text: 'wrote' }]
+    },
+  }))
   const config: Sansheng.Config = {
     storeRoot: join(root, 'store'),
     workspaceRoot: workspace,
@@ -264,8 +275,34 @@ describe('tool failure paths', () => {
     expect(toolResults(eunuch).join('')).toContain('封驳必须附问题清单')
   })
 
-  it('rework, deviation, and failed acceptance flow back with their issues', async () => {
+  it('a done claim with missing deliverables is refused, and passes once they exist', async () => {
     const toExecuting = flow()
+    const { ctx, eunuch, config } = await boot({
+      eunuch: [
+        ...toExecuting.eunuch,
+        toolCallResponse('x1', 'sansheng_execute', { topic: '001' }), textResponse('d'),
+        toolCallResponse('x2', 'sansheng_execute', { topic: '001' }), textResponse('e'),
+        toolCallResponse('st', 'sansheng_status', { topic: '001' }), textResponse('f'),
+      ],
+      zhongshu: toExecuting.zhongshu,
+      menxia: toExecuting.menxia,
+      shangshu: [
+        toolCallResponse('s1', STRUCTURED_OUTPUT_TOOL, { status: 'done', report: '已完成，交付 `result.txt`', summary: '尚书：完成' }),
+        toolCallResponse('s2', STRUCTURED_OUTPUT_TOOL, { status: 'done', report: '已完成，交付 `result.txt`', summary: '尚书：完成' }),
+      ],
+    })
+    await driveToExecuting(ctx, eunuch)
+    await say(ctx, eunuch, '4')
+    // First claim names a deliverable that does not exist: no transition.
+    expect(toolResults(eunuch).join('')).toContain('不存在')
+    expect(toolResults(eunuch).join('')).not.toContain('当前阶段：accepting')
+    // Create the deliverable, then the same claim submits into acceptance.
+    writeFileSync(join(config.workspaceRoot, 'result.txt'), 'ok')
+    await say(ctx, eunuch, '5')
+    expect(toolResults(eunuch).join('')).toContain('当前阶段：accepting')
+  })
+
+  it('rework, deviation, and failed acceptance flow back with their issues', async () => {    const toExecuting = flow()
     const { ctx, eunuch, adapters } = await boot({
       eunuch: [
         ...toExecuting.eunuch,

@@ -5,6 +5,8 @@
  * transition. The child never writes the record itself.
  */
 import { randomUUID } from 'node:crypto'
+import { access } from 'node:fs/promises'
+import { isAbsolute, join } from 'node:path'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -250,9 +252,23 @@ ${decree}` }
       }), EXECUTION_SCHEMA, exec.signal)
       const n = history.filter(e => e.event.type === 'execution_submitted' || e.event.type === 'deviation_reported').length + 1
       const deviation = out.status === 'deviation'
+      const report = str(out.report, 'report')
+      if (!deviation) {
+        // Hard check before the transition: a done claim must point at real files.
+        const missing = await missingDeliverables(claimedDeliverables(report, env.config.workspaceRoot))
+        if (missing.length > 0) {
+          return {
+            text: [
+              '尚书声称完成，但以下交付物不存在，未提交验收：',
+              ...missing.map(p => `- ${p}`),
+              '请命尚书补齐交付物后重新提交。',
+            ].join('\n'),
+          }
+        }
+      }
       await store.transition(args.topic, 'shangshu', { type: deviation ? 'deviation_reported' : 'execution_submitted' }, {
         name: `execution-${n}`,
-        text: JSON.stringify({ status: out.status, report: str(out.report, 'report'), summary: str(out.summary, 'summary') }),
+        text: JSON.stringify({ status: out.status, report, summary: str(out.summary, 'summary') }),
       })
       const phase = await refresh(env, args.topic)
       return { text: `尚书${deviation ? '上报偏差' : '提交成果'}：${String(out.summary)}\n当前阶段：${phase}` }
@@ -325,4 +341,38 @@ async function approvedPlan(
 function feedbackSince(history: readonly StoredEntry[]): string | undefined {
   const last = latest(history, 'sent_back')
   return last?.note
+}
+
+/** Deliverable paths a report claims to have produced, as written in the text. */
+export function claimedDeliverables(report: string, workspaceRoot: string): string[] {
+  const paths = new Set<string>()
+  // Code spans are the report's own path claims; bare candidates come from
+  // splitting on whitespace and sentence punctuation (not `:` — a colon is
+  // half of a Windows drive prefix), then keeping tokens that end in a file
+  // suffix. Prose words never look like files.
+  const tokens = report
+    .split(/[\s，。；、（）"「」`|,;]+/u)
+    .map(t => t.replace(/^[([{<]+|[)\]}>.,;:!?]+$/g, '').trim())
+    .filter(t => t !== '')
+  for (const t of [...tokens, ...[...report.matchAll(/`([^`\n]+)`/g)].map(m => m[1] ?? '')]) addCandidate(t)
+  return [...paths]
+
+  function addCandidate(raw: string): void {
+    if (raw.includes('*')) return
+    // Absolute paths count only inside the workspace; relative ones resolve there.
+    if (isAbsolute(raw) && !raw.toLowerCase().startsWith(workspaceRoot.toLowerCase())) return
+    const rel = isAbsolute(raw) ? raw.slice(workspaceRoot.length).replace(/^[\\/]+/, '') : raw
+    // A deliverable ends in a file suffix; a leading digit makes it a number.
+    if (!/\.[A-Za-z][A-Za-z0-9]{0,7}$/.test(rel) || /^\d/.test(rel)) return
+    paths.add(join(workspaceRoot, rel))
+  }
+}
+
+/** Verify every claimed deliverable exists; list the missing ones. */
+export async function missingDeliverables(claims: readonly string[]): Promise<string[]> {
+  const missing: string[] = []
+  for (const path of claims) {
+    await access(path).catch(() => { missing.push(path) })
+  }
+  return missing
 }

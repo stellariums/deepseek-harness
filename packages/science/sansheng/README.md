@@ -167,7 +167,7 @@ Independent: child requests share no prefix with the parent or with each other, 
 These limits mark where the governance guarantee thins out. They are current package constraints, not a task backlog.
 
 - **Acceptance can read the entire workspace** — the reviewer needs a shell to re-run deliverables, and the guard grants it across the workspace rather than only the deliverables; accepted for now because the plan is sealed by then.
-- **Executor completion is not hard-verified** — moving to acceptance relies on the executor's own `done` report; nothing checks that the listed deliverable files exist.
+- **Executor completion is verified at text level only** — before acceptance, the plugin extracts deliverable paths the executor's report claims (code spans and bare file-suffixed paths inside the workspace) and requires each to exist; a report that avoids naming paths falls back to the reviewer's independent re-run.
 - **A crash between a document write and its ledger append wedges the topic** — the sealed document exists without its transition, so retrying fails on the existing file and no phase escape covers that stage.
 - **Reads outside protected roots are unrestricted** — every role can read the whole workspace; only writes are confined to the executor.
 - **Review rounds are slow on reasoning models** — a small topic can take half an hour; no reasoning-effort cap is exposed on the reviewer route.
