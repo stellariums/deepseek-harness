@@ -5,7 +5,8 @@
  * transition. The child never writes the record itself.
  */
 import { randomUUID } from 'node:crypto'
-import { access } from 'node:fs/promises'
+import { access, cp, mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -37,6 +38,7 @@ async function runRole(
   prompt: string,
   schema: object,
   signal: AbortSignal,
+  cwd: string = env.config.workspaceRoot,
 ): Promise<Record<string, unknown>> {
   // The guard reads phases from the cache; load it before the child's first call.
   await refresh(env, topicId)
@@ -52,7 +54,7 @@ async function runRole(
       request: {
         prompt: [{ type: 'text', text: prompt }],
         parent,
-        cwd: env.config.workspaceRoot,
+        cwd,
         agentOptions: env.config.routes[role],
         persona: PERSONAS[role],
         outputSchema: schema as never,
@@ -290,7 +292,16 @@ ${decree}` }
       /* v8 ignore next -- accepting is reachable only through execution_submitted, which always carries its report. */
       if (submitted?.doc === undefined) throw new Error('no execution report on record')
       const report = (JSON.parse(await store.readDoc(args.topic, submitted.doc.name)) as { report: string }).report
-      const out = await runRole(env, parent, 'menxia', args.topic, acceptPrompt({ plan: sealed.plan, criteria: sealed.criteria, report }), ACCEPTANCE_SCHEMA, exec.signal)
+      // Acceptance re-runs code in a disposable copy, so the reviewer can
+      // never touch the original workspace the executor delivered into.
+      const snapshot = await mkdtemp(join(tmpdir(), 'sansheng-accept-'))
+      await cp(env.config.workspaceRoot, snapshot, { recursive: true })
+      let out: Record<string, unknown>
+      try {
+        out = await runRole(env, parent, 'menxia', args.topic, acceptPrompt({ plan: sealed.plan, criteria: sealed.criteria, report }), ACCEPTANCE_SCHEMA, exec.signal, snapshot)
+      } finally {
+        await rm(snapshot, { recursive: true, force: true })
+      }
       const passed = out.verdict === 'pass'
       const issues = strList(out.issues)
       if (!passed && issues.length === 0) throw new Error('验收不通过必须附问题清单')

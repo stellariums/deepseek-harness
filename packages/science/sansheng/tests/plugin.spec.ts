@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -273,6 +273,45 @@ describe('tool failure paths', () => {
     await say(ctx, eunuch, '2')
     await say(ctx, eunuch, '3')
     expect(toolResults(eunuch).join('')).toContain('封驳必须附问题清单')
+  })
+
+  it('acceptance runs in a disposable workspace snapshot, removed afterwards', async () => {
+    const toExecuting = flow()
+    const { ctx, eunuch, config } = await boot({
+      eunuch: [
+        ...toExecuting.eunuch,
+        toolCallResponse('x', 'sansheng_execute', { topic: '001' }), textResponse('d'),
+        toolCallResponse('a', 'sansheng_accept', { topic: '001' }), textResponse('e'),
+      ],
+      zhongshu: toExecuting.zhongshu,
+      menxia: [
+        ...toExecuting.menxia,
+        toolCallResponse('m2', STRUCTURED_OUTPUT_TOOL, { verdict: 'pass', issues: [], summary: '门下：达标' }),
+      ],
+      shangshu: [
+        toolCallResponse('s0', 'write', { file_path: 'model.py', content: 'x' }),
+        toolCallResponse('s1', STRUCTURED_OUTPUT_TOOL, { status: 'done', report: '见 model.py', summary: '尚书：完成' }),
+      ],
+    })
+    const childCwds: string[] = []
+    const original = ctx.subagents.startActivation.bind(ctx.subagents)
+    ctx.subagents.startActivation = ((options: { request?: { cwd?: string } }) => {
+      childCwds.push(options.request?.cwd ?? '(none)')
+      return original(options as never)
+    }) as never
+    await driveToExecuting(ctx, eunuch)
+    writeFileSync(join(config.workspaceRoot, 'model.py'), 'x')
+    await say(ctx, eunuch, '4')
+    await say(ctx, eunuch, '5')
+    expect(toolResults(eunuch).join('')).toContain('当前阶段：awaiting_close')
+    // The reviewer child ran outside the workspace, in a snapshot since removed.
+    const acceptCwd = childCwds.at(-1)
+    expect(acceptCwd).toBeDefined()
+    expect(acceptCwd).not.toBe(config.workspaceRoot)
+    expect(acceptCwd).toContain('sansheng-accept-')
+    expect(existsSync(acceptCwd as string)).toBe(false)
+    // The original workspace keeps the executor's deliverable untouched.
+    expect(existsSync(join(config.workspaceRoot, 'model.py'))).toBe(true)
   })
 
   it('a done claim with missing deliverables is refused, and passes once they exist', async () => {

@@ -111,6 +111,7 @@ export function acceptPrompt(input: { plan: string; criteria: string; report: st
     section('已朱批方案', input.plan),
     section('锁定验收标准（唯一判定依据）', input.criteria),
     section('尚书执行报告', input.report),
+    '当前目录是工作区的快照副本，交付物已复制其中；在此复核与复跑，不影响原始工作区。',
     '请独立复核交付物与证据；可复跑代码。只按锁定标准判定 pass 或 reject。',
   ].join('\n')
 }
