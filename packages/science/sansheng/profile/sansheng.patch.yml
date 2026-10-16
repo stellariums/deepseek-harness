@@ -1,10 +1,18 @@
 # 三省制 profile overlay. Use together with the USTC provider patch:
 #   source .local/env.sh && source .local/secrets.env
-#   cd <研究工作区> && pnpm -C /e/Science-harness dsh web \
+#   cd <研究工作区>   # the workspace IS the process cwd: workspaceRoot = process.cwd()
+#   TSX_TSCONFIG_PATH='E:\Science-harness\tsconfig.base.json' node \
+#     --import file:///E:/Science-harness/node_modules/tsx/dist/esm/index.mjs \
+#     E:/Science-harness/apps/cli/src/bin.ts web \
 #     --patch E:/Science-harness/packages/science/sansheng/profile/ustc-llm.patch.yml \
 #     --patch E:/Science-harness/packages/science/sansheng/profile/sansheng.patch.yml
-# The workspace is the directory dsh starts in; the record store lives under
-# DSH_HOME, outside the workspace and outside every agent's reach.
+# Do NOT launch with `pnpm -C <repo> dsh web` from the workspace: pnpm -C resets
+# the process cwd to the repo, so workspaceRoot would cover the whole repository.
+# TSX_TSCONFIG_PATH is required when cwd is outside the repo: without it tsx
+# resolves @deepseek-ai/cordis to vendor lib/ and crashes on FiberState.
+# The record store lives under DSH_HOME (outside the workspace and outside
+# every agent's reach). The UI's workspace picker is independent of the process
+# cwd; sessions created from the UI follow the picker's workspace.
 - id: agent-default-model
   config:
     provider: ustc

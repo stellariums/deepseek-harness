@@ -24,7 +24,7 @@ MVP 已完成并用真实模型全流程验证（2026-10-15，第 8 轮试点）
 - 插件文档（中文）：[packages/science/sansheng/README.zh.md](packages/science/sansheng/README.zh.md)
 - 代码：[packages/science/sansheng/src/](packages/science/sansheng/src/)（118 个单元测试，覆盖率 100%）
 
-尚未完成：dsh 网页界面实测、中书方案规模约束、性能优化。详见 HANDOFF 第 4 节。
+尚未完成：中书方案规模约束、性能优化。网页界面已实测通过（命令菜单、下旨、朱批、阅折全部生效）。详见 HANDOFF 第 4 节。
 
 ## 怎么跑
 
