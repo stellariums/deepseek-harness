@@ -320,6 +320,9 @@ describe('tool failure paths', () => {
     await say(ctx, eunuch, '3')
     await say(ctx, eunuch, '4')
     expect(JSON.stringify(adapters.zhongshu.requests[1]!.messages)).toContain('缺对照')
+    // The resubmission carries the previous plan so the planner revises it.
+    expect(JSON.stringify(adapters.zhongshu.requests[1]!.messages)).toContain('上一版方案')
+    expect(JSON.stringify(adapters.zhongshu.requests[1]!.messages)).toContain(PLAN.plan)
   })
 
   it('execution refuses a plan whose bytes changed after approval', async () => {

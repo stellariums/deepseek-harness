@@ -75,6 +75,8 @@ describe('renderMemorial', () => {
 describe('prompts', () => {
   it('include optional sections only when present', () => {
     expect(draftPrompt({ decree: 'd', translation: 't' })).not.toContain('封驳')
+    expect(draftPrompt({ decree: 'd', translation: 't' })).not.toContain('上一版方案')
+    expect(draftPrompt({ decree: 'd', translation: 't', previousPlan: 'p1' })).toContain('上一版方案')
     const d = draftPrompt({ decree: 'd', translation: 't', issues: ['a'], feedback: 'f' })
     expect(d).toContain('- a')
     expect(d).toContain('皇帝意见')

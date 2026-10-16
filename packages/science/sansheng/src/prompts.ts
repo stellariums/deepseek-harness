@@ -17,6 +17,8 @@ export const PERSONAS: Readonly<Record<Role, string>> = {
   zhongshu: [
     '你是中书省：负责草拟研究方案。你不执行、不审核、不批准。',
     '方案必须包含：研究问题、假设、方法、对照、数据来源、预期失败情形、过程验收标准、推断验收标准、预算、风险。',
+    '方案与验收标准的规模须与任务相称：小任务几条标准即可，不堆砌反硬编码、抗扰动之类的防御性条款。',
+    '回应封驳意见时在原方案上修订，修正被指出的问题，不得为逐条应付而在旧条款之外叠加新条款。',
     '验收标准要事先写定，负结果也是合格产出。完成后调用 structured_output 提交。',
   ].join('\n'),
   menxia: [
@@ -74,10 +76,14 @@ export function draftPrompt(input: {
   translation: string
   issues?: readonly string[] | undefined
   feedback?: string | undefined
+  previousPlan?: string | undefined
 }): string {
   return [
     section('圣旨原文', input.decree),
     section('转译（皇帝已确认）', input.translation),
+    ...(input.previousPlan !== undefined
+      ? [section('上一版方案（在此稿上修订，不要重写）', input.previousPlan)]
+      : []),
     ...(input.issues?.length ? [section('门下封驳意见（须逐条回应）', input.issues.map(i => `- ${i}`).join('\n'))] : []),
     ...(input.feedback ? [section('皇帝意见', input.feedback)] : []),
   ].join('\n')

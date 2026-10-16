@@ -180,9 +180,14 @@ ${decree}` }
       const history = await store.history(args.topic)
       const translation = await confirmedTranslation(env, args.topic, history)
       const lastReview = latest(history, 'review_rejected')
+      // Resubmission revises the previous plan instead of rewriting from scratch.
+      const previousPlan = before.planVersion > 0
+        ? (JSON.parse(await store.readDoc(args.topic, `plan-v${before.planVersion}`)) as { plan: string }).plan
+        : undefined
       const out = await runRole(env, parent, 'zhongshu', args.topic, draftPrompt({
         decree: await store.readDoc(args.topic, 'decree'),
         translation,
+        previousPlan,
         issues: lastReview?.doc ? await sealedIssues(env, args.topic, lastReview.doc.name) : undefined,
         feedback: feedbackSince(history),
       }), PLAN_SCHEMA, exec.signal)

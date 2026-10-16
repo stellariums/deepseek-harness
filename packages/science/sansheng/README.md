@@ -150,7 +150,7 @@ The root-session tool list is stable across turns; child requests are separate s
 
 #### What the model sees
 
-Each spawned agent receives its persona plus a task prompt assembled from sealed documents: the reviewer gets the decree, the confirmed translation, and the sealed plan; the planner additionally gets the latest rejection issues and your send-back note; the executor gets the approved plan and the locked acceptance criteria.
+Each spawned agent receives its persona plus a task prompt assembled from sealed documents: the reviewer gets the decree, the confirmed translation, and the sealed plan; the planner additionally gets the previous plan to revise, the latest rejection issues, and your send-back note; the executor gets the approved plan and the locked acceptance criteria. The planner persona caps plan and criteria size to the task and requires revisions over accretion.
 
 #### Token effect
 
